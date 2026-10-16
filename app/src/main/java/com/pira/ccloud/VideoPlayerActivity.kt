@@ -518,9 +518,13 @@ fun VideoPlayerScreen(
     val playerListener = remember(exoPlayer) {
         object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
-                // Only update isPlaying if we're not currently seeking
+            // Only update isPlaying if we're not currently seeking
                 if (!isSeeking) {
                     isPlaying = playing
+            // On Android TV (and mobile), show controls when paused
+                    if (!playing) {
+                        showControls = true
+                    }
                 }
             }
             
