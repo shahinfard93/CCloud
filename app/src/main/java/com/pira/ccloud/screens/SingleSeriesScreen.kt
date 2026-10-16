@@ -1,6 +1,6 @@
 package com.pira.ccloud.screens
 
-
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -902,8 +902,7 @@ fun SeriesDetailsContent(
                             isLastWatched = isLastWatched,
                             modifier = Modifier
                                 .bringIntoViewRequester(bringIntoViewRequester)
-                                .focusRequester(focusRequester)
-                                .focusable(),
+                                .focusRequester(focusRequester),
                             onPlayClick = { onEpisodeClick(episode) },
                             onDownloadClick = { onDownloadClick(episode) },
                             onImageClick = { imageUrl ->
@@ -944,7 +943,9 @@ fun EpisodeItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .onFocusChanged { isFocused = it.isFocused },
+            .onFocusChanged { isFocused = it.isFocused }
+            .focusable()
+            .clickable { onPlayClick() },
         colors = CardDefaults.cardColors(
             containerColor = when {
                 isFocused -> MaterialTheme.colorScheme.primaryContainer
@@ -952,7 +953,9 @@ fun EpisodeItem(
                 isWatched -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
-        )
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 8.dp else 4.dp)
     ) {
         Column(
             modifier = Modifier
@@ -1052,6 +1055,7 @@ fun EpisodeItem(
                         onClick = { onDownloadClick() },
                         modifier = Modifier
                             .size(36.dp)
+                            .focusProperties { canFocus = false }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
@@ -1069,6 +1073,7 @@ fun EpisodeItem(
                     onClick = { onPlayClick() },
                     modifier = Modifier
                         .size(36.dp)
+                        .focusProperties { canFocus = false }
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
