@@ -1,5 +1,6 @@
 package com.pira.ccloud.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.rememberCoroutineScope
@@ -405,7 +406,7 @@ fun DownloadMenu(
     }
 }
 
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SeriesDetailsContent(
     series: Series,
@@ -915,7 +916,7 @@ fun SeriesDetailsContent(
         }
     }
 }
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EpisodeItem(
     episode: Episode,
