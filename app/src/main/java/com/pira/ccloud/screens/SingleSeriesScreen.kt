@@ -140,6 +140,8 @@ fun SingleSeriesScreen(
         SeriesDetailsContent(
             series = series!!,
             seasonsViewModel = seasonsViewModel,
+            selectedSeasonIndex = selectedSeasonIndex,
+            onSeasonIndexChange = { selectedSeasonIndex = it },
             onBackClick = { navController.popBackStack() },
             onEpisodeClick = { episode ->
                 if (episode.sources.isNotEmpty() && series != null) {
@@ -389,6 +391,8 @@ fun DownloadMenu(
 fun SeriesDetailsContent(
     series: Series,
     seasonsViewModel: SeasonsViewModel,
+    selectedSeasonIndex: Int,
+    onSeasonIndexChange: (Int) -> Unit,
     onBackClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
     onDownloadClick: (Episode) -> Unit,
@@ -396,7 +400,6 @@ fun SeriesDetailsContent(
 ) {
     val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
-    var selectedSeasonIndex by remember { mutableStateOf(0) }
     var showEpisodeImageDialog by remember { mutableStateOf(false) }
     var episodeImageUrl by remember { mutableStateOf("") }
     
@@ -736,7 +739,7 @@ fun SeriesDetailsContent(
                         val season = seasonsViewModel.seasons[index]
                         Card(
                             modifier = Modifier
-                                .clickable { selectedSeasonIndex = index },
+                                .clickable { onSeasonIndexChange(index) },
                             colors = CardDefaults.cardColors(
                                 containerColor = if (selectedSeasonIndex == index) 
                                     MaterialTheme.colorScheme.primary 
