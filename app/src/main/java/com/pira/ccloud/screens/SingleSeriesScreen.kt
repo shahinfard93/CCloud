@@ -1,6 +1,5 @@
 package com.pira.ccloud.screens
 
-@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
