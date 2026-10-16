@@ -1,5 +1,9 @@
 package com.pira.ccloud.screens
 
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -460,6 +464,17 @@ fun SeriesDetailsContent(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+    val lastWatchedEpisodeIdInSeason = remember(watchedRefreshKey, selectedSeasonIndex, seasonsViewModel.seasons) {
+        val seasons = seasonsViewModel.seasons
+        if (selectedSeasonIndex !in seasons.indices) {
+            null
+        } else {
+            val season = seasons[selectedSeasonIndex]
+            season.episodes.lastOrNull { episode ->
+                StorageUtils.isEpisodeWatched(context, series.id, season.id, episode.id)
+            }?.id
+        }
+    }
     var showEpisodeImageDialog by remember { mutableStateOf(false) }
     var episodeImageUrl by remember { mutableStateOf("") }
     
@@ -874,24 +889,30 @@ fun SeriesDetailsContent(
                     selectedSeason.episodes.forEach { episode ->
                         val isEpisodeWatched = remember(watchedRefreshKey, series.id, selectedSeason.id, episode.id) {
                             StorageUtils.isEpisodeWatched(context, series.id, selectedSeason.id, episode.id)
-                            }
+                        }
+                        val isLastWatched = episode.id == lastWatchedEpisodeIdInSeason
+                        val focusRequester = remember(episode.id) { FocusRequester() }
                         val bringIntoViewRequester = remember(episode.id) { BringIntoViewRequester() }
-                        val shouldBringIntoView = episode.id == lastWatchedEpisodeIdInSeason
 
-                        LaunchedEffect(shouldBringIntoView, selectedSeasonIndex, watchedRefreshKey) {
-                            if (shouldBringIntoView) {
-                                delay(300)
+                        LaunchedEffect(isLastWatched, selectedSeasonIndex, watchedRefreshKey) {
+                            if (isLastWatched) {
+                                delay(350)
                                 try {
                                     bringIntoViewRequester.bringIntoView()
+                                    focusRequester.requestFocus()
                                 } catch (_: Exception) {
                                 }
                             }
                         }
+
                         EpisodeItem(
                             episode = episode,
                             isWatched = isEpisodeWatched,
-                            isLastWatched = shouldBringIntoView,
-                            modifier = Modifier.bringIntoViewRequester(bringIntoViewRequester),
+                            isLastWatched = isLastWatched,
+                            modifier = Modifier
+                                .bringIntoViewRequester(bringIntoViewRequester)
+                                .focusRequester(focusRequester)
+                                .focusable(),
                             onPlayClick = { onEpisodeClick(episode) },
                             onDownloadClick = { onDownloadClick(episode) },
                             onImageClick = { imageUrl ->
@@ -927,14 +948,15 @@ fun EpisodeItem(
     onDownloadClick: () -> Unit,
     onImageClick: (String) -> Unit
 ) {
+    var isFocused by remember { mutableStateOf(false) }
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .onFocusChanged { isFocused = it.isFocused },
         colors = CardDefaults.cardColors(
             containerColor = when {
+                isFocused -> MaterialTheme.colorScheme.primaryContainer
                 isLastWatched -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
                 isWatched -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                 else -> MaterialTheme.colorScheme.surfaceVariant
