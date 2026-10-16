@@ -1055,7 +1055,6 @@ fun EpisodeItem(
                         onClick = { onDownloadClick() },
                         modifier = Modifier
                             .size(36.dp)
-                            .focusProperties { canFocus = false }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
