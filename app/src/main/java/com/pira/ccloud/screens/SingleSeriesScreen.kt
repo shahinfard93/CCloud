@@ -1,5 +1,10 @@
 package com.pira.ccloud.screens
 
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -145,7 +150,17 @@ fun SingleSeriesScreen(
             series = series!!,
             seasonsViewModel = seasonsViewModel,
             selectedSeasonIndex = selectedSeasonIndex,
-            onSeasonIndexChange = { selectedSeasonIndex = it },
+            onSeasonIndexChange = { index ->
+                selectedSeasonIndex = index
+                val seasons = seasonsViewModel.seasons
+                if (index in seasons.indices) {
+                    StorageUtils.saveLastSelectedSeasonId(
+                        context,
+                        series!!.id,
+                        seasons[index].id
+                    )
+                }
+            },
             onBackClick = { navController.popBackStack() },
             onEpisodeClick = { episode ->
                 if (episode.sources.isNotEmpty() && series != null) {
@@ -407,7 +422,32 @@ fun SeriesDetailsContent(
     // Refresh watched status when returning to this screen (e.g. after player)
     var watchedRefreshKey by remember { mutableStateOf(0) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    // Restore last selected season when seasons are loaded
+    LaunchedEffect(seasonsViewModel.seasons) {
+        val seasons = seasonsViewModel.seasons
+        if (seasons.isNotEmpty()) {
+            val lastSeasonId = StorageUtils.loadLastSelectedSeasonId(context, series.id)
+            if (lastSeasonId != null) {
+                val index = seasons.indexOfFirst { it.id == lastSeasonId }
+                if (index >= 0 && index != selectedSeasonIndex) {
+                    onSeasonIndexChange(index)
+                }
+            }
+        }
+    }
 
+    // Last watched episode id in the currently selected season (for scroll/highlight)
+    val lastWatchedEpisodeIdInSeason = remember(watchedRefreshKey, selectedSeasonIndex, seasonsViewModel.seasons) {
+        val seasons = seasonsViewModel.seasons
+        if (selectedSeasonIndex !in seasons.indices) {
+            null
+        } else {
+            val season = seasons[selectedSeasonIndex]
+            season.episodes.lastOrNull { episode ->
+                StorageUtils.isEpisodeWatched(context, series.id, season.id, episode.id)
+            }?.id
+        }
+    }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -834,9 +874,23 @@ fun SeriesDetailsContent(
                         val isEpisodeWatched = remember(watchedRefreshKey, series.id, selectedSeason.id, episode.id) {
                             StorageUtils.isEpisodeWatched(context, series.id, selectedSeason.id, episode.id)
                             }
+                        val bringIntoViewRequester = remember(episode.id) { BringIntoViewRequester() }
+                        val shouldBringIntoView = episode.id == lastWatchedEpisodeIdInSeason
+
+                        LaunchedEffect(shouldBringIntoView, selectedSeasonIndex, watchedRefreshKey) {
+                            if (shouldBringIntoView) {
+                                delay(300)
+                                try {
+                                    bringIntoViewRequester.bringIntoView()
+                                } catch (_: Exception) {
+                                }
+                            }
+                        }
                         EpisodeItem(
                             episode = episode,
                             isWatched = isEpisodeWatched,
+                            isLastWatched = shouldBringIntoView,
+                            modifier = Modifier.bringIntoViewRequester(bringIntoViewRequester),
                             onPlayClick = { onEpisodeClick(episode) },
                             onDownloadClick = { onDownloadClick(episode) },
                             onImageClick = { imageUrl ->
@@ -866,21 +920,24 @@ fun SeriesDetailsContent(
 fun EpisodeItem(
     episode: Episode,
     isWatched: Boolean,
+    isLastWatched: Boolean = false,
+    modifier: Modifier = Modifier,
     onPlayClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onImageClick: (String) -> Unit
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isWatched) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else 
-                MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = when {
+                isLastWatched -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                isWatched -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
         )
     ) {
         Column(
