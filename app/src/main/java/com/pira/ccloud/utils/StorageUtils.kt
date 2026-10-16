@@ -606,4 +606,39 @@ object StorageUtils {
             Log.e(TAG, "Error clearing all watched episodes", e)
         }
     }
+    // Last selected season per series
+    fun saveLastSelectedSeasonId(context: Context, seriesId: Int, seasonId: Int) {
+        try {
+            val map = loadAllLastSelectedSeasons(context).toMutableMap()
+            map[seriesId.toString()] = seasonId
+            val jsonString = Json.encodeToString(map)
+            val file = File(context.filesDir, "last_selected_seasons.json")
+            file.writeText(jsonString)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving last selected season", e)
+        }
+    }
+
+    fun loadLastSelectedSeasonId(context: Context, seriesId: Int): Int? {
+        return try {
+            loadAllLastSelectedSeasons(context)[seriesId.toString()]
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading last selected season", e)
+            null
+        }
+    }
+
+    private fun loadAllLastSelectedSeasons(context: Context): Map<String, Int> {
+        return try {
+            val file = File(context.filesDir, "last_selected_seasons.json")
+            if (file.exists()) {
+                Json.decodeFromString<Map<String, Int>>(file.readText())
+            } else {
+                emptyMap()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading all last selected seasons", e)
+            emptyMap()
+        }
+    }
 }
