@@ -1,5 +1,9 @@
 package com.pira.ccloud.screens
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -400,6 +404,21 @@ fun SeriesDetailsContent(
 ) {
     val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
+    // Refresh watched status when returning to this screen (e.g. after player)
+    var watchedRefreshKey by remember { mutableStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                watchedRefreshKey++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     var showEpisodeImageDialog by remember { mutableStateOf(false) }
     var episodeImageUrl by remember { mutableStateOf("") }
     
@@ -812,7 +831,9 @@ fun SeriesDetailsContent(
                     )
                     
                     selectedSeason.episodes.forEach { episode ->
-                        val isEpisodeWatched = StorageUtils.isEpisodeWatched(context, series.id, selectedSeason.id, episode.id)
+                        val isEpisodeWatched = remember(watchedRefreshKey, series.id, selectedSeason.id, episode.id) {
+                            StorageUtils.isEpisodeWatched(context, series.id, selectedSeason.id, episode.id)
+                            }
                         EpisodeItem(
                             episode = episode,
                             isWatched = isEpisodeWatched,
