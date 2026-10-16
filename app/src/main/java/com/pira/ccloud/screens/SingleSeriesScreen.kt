@@ -1,5 +1,7 @@
 package com.pira.ccloud.screens
 
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
@@ -942,20 +944,27 @@ fun EpisodeItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .scale(if (isFocused) 1.03f else 1f)
+            .border(
+                width = if (isFocused) 3.dp else 0.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            )
             .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .clickable { onPlayClick() },
+            .focusable(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isFocused) 10.dp else 4.dp
+        ),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                isFocused -> MaterialTheme.colorScheme.primaryContainer
-                isLastWatched -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
-                isWatched -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                isFocused -> MaterialTheme.colorScheme.primary
+                isLastWatched -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                isWatched -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
-        ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 8.dp else 4.dp)
+        )
     ) {
         Column(
             modifier = Modifier
@@ -1018,7 +1027,8 @@ fun EpisodeItem(
                         text = episode.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (isFocused) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurface
                     )
                     
                     // Show source count if there are multiple sources
@@ -1059,7 +1069,8 @@ fun EpisodeItem(
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Download",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (isFocused) MaterialTheme.colorScheme.onPrimary
+                               else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
