@@ -465,17 +465,7 @@ fun SeriesDetailsContent(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    val lastWatchedEpisodeIdInSeason = remember(watchedRefreshKey, selectedSeasonIndex, seasonsViewModel.seasons) {
-        val seasons = seasonsViewModel.seasons
-        if (selectedSeasonIndex !in seasons.indices) {
-            null
-        } else {
-            val season = seasons[selectedSeasonIndex]
-            season.episodes.lastOrNull { episode ->
-                StorageUtils.isEpisodeWatched(context, series.id, season.id, episode.id)
-            }?.id
-        }
-    }
+    
     var showEpisodeImageDialog by remember { mutableStateOf(false) }
     var episodeImageUrl by remember { mutableStateOf("") }
     
